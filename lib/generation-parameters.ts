@@ -31,7 +31,6 @@ export function resolveEnabledGenerationParameters(
 
     const enabled = new Set<GenerationParameterKey>([
         "temperature",
-        "top_p",
         "frequency_penalty",
         "presence_penalty",
     ]);
