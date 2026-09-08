@@ -1132,7 +1132,6 @@ function buildChatCompletionRequest(apiConfig, preset, messages) {
     model,
     messages,
     temperature: numberOrDefault(preset?.temperature, 0.8),
-    top_p: numberOrDefault(preset?.top_p, 1),
     frequency_penalty: numberOrDefault(preset?.frequency_penalty, 0),
     presence_penalty: numberOrDefault(preset?.presence_penalty, 0),
   };
