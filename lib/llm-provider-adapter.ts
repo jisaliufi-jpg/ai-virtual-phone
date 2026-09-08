@@ -298,7 +298,6 @@ function buildSamplingBody(preset: PresetConfig | null): Record<string, unknown>
     const enabled = resolveEnabledGenerationParameters(preset);
     const body: Record<string, unknown> = {};
     if (enabled.has("temperature")) body.temperature = preset?.temperature ?? 0.8;
-    if (enabled.has("top_p")) body.top_p = preset?.top_p ?? 1.0;
     if (enabled.has("frequency_penalty")) body.frequency_penalty = preset?.frequency_penalty ?? 0;
     if (enabled.has("presence_penalty")) body.presence_penalty = preset?.presence_penalty ?? 0;
     if (enabled.has("max_tokens") && preset?.openai_max_tokens && preset.openai_max_tokens > 0) {
@@ -579,7 +578,6 @@ function buildAnthropicRequest(
                 : ANTHROPIC_AUTO_MAX_TOKENS,
     };
     if (enabled.has("temperature")) body.temperature = preset?.temperature ?? 0.8;
-    if (preset && enabled.has("top_p")) body.top_p = preset.top_p ?? 1;
     if (enabled.has("top_k")) body.top_k = preset?.top_k ?? 0;
     if (system) body.system = system;
     if (options.stream) body.stream = true;
@@ -642,7 +640,6 @@ function buildGeminiRequest(
     const enabled = resolveEnabledGenerationParameters(preset);
     const generationConfig: Record<string, unknown> = {};
     if (enabled.has("temperature")) generationConfig.temperature = preset?.temperature ?? 0.8;
-    if (enabled.has("top_p")) generationConfig.topP = preset?.top_p ?? 1;
     if (enabled.has("top_k")) generationConfig.topK = preset?.top_k ?? 0;
     if (
         options.maxTokens
