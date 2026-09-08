@@ -10,19 +10,19 @@ export type FetchLlmPayloadOptions = {
     signal?: AbortSignal;
 };
 
-// Clean control chars (except \t\n\r) and lone UTF-16 surrogates so that
-// JSON.stringify produces output accepted by strict API parsers.
+// Pass 1 (pre-stringify): scrub individual string values in the body object.
+// Removes C0 control chars (except \t \n \r) and replaces lone UTF-16 surrogates.
 function sanitizeString(s: string): string {
     let out = "";
     for (let i = 0; i < s.length; i++) {
         const code = s.charCodeAt(i);
-        if (code < 32 && code !== 9 && code !== 10 && code !== 13) continue; // strip C0 ctrl
-        if (code >= 0xD800 && code <= 0xDBFF) { // high surrogate
+        if (code < 32 && code !== 9 && code !== 10 && code !== 13) continue;
+        if (code >= 0xD800 && code <= 0xDBFF) {
             const next = s.charCodeAt(i + 1);
-            if (next >= 0xDC00 && next <= 0xDFFF) { out += s[i] + s[i + 1]; i++; } // valid pair
-            else out += "�"; // lone high surrogate
+            if (next >= 0xDC00 && next <= 0xDFFF) { out += s[i] + s[i + 1]; i++; }
+            else out += "�";
         } else if (code >= 0xDC00 && code <= 0xDFFF) {
-            out += "�"; // lone low surrogate
+            out += "�";
         } else {
             out += s[i];
         }
@@ -43,11 +43,20 @@ function sanitizeBodyValue(value: unknown): unknown {
     return value;
 }
 
+// Pass 2 (post-stringify): scan the resulting JSON text for any \X where X is
+// not a valid JSON escape character, and double the backslash so it becomes \\X.
+// This is a last-resort catch for edge cases the pre-pass might miss.
+function fixInvalidJsonEscapes(json: string): string {
+    // Valid single-char JSON escapes: " \ / b f n r t
+    // Valid multi-char: \uXXXX (handled separately by not touching \u)
+    return json.replace(/\\([^"\\/bfnrtu])/g, "\\\\$1");
+}
+
 export function fetchLlmPayload(
     payload: LlmRequestPayload,
     options: FetchLlmPayloadOptions = {},
 ): Promise<Response> {
-    const bodyText = JSON.stringify(sanitizeBodyValue(payload.body));
+    const bodyText = fixInvalidJsonEscapes(JSON.stringify(sanitizeBodyValue(payload.body)));
     if (payload.serverProxy) {
         return fetch("/api/llm-proxy", {
             method: "POST",
