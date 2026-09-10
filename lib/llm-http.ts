@@ -43,20 +43,15 @@ function sanitizeBodyValue(value: unknown): unknown {
     return value;
 }
 
-// Pass 2 (post-stringify): scan the resulting JSON text for any \X where X is
-// not a valid JSON escape character, and double the backslash so it becomes \\X.
-// This is a last-resort catch for edge cases the pre-pass might miss.
-function fixInvalidJsonEscapes(json: string): string {
-    // Valid single-char JSON escapes: " \ / b f n r t
-    // Valid multi-char: \uXXXX (handled separately by not touching \u)
-    return json.replace(/\\([^"\\/bfnrtu])/g, "\\\\$1");
-}
-
 export function fetchLlmPayload(
     payload: LlmRequestPayload,
     options: FetchLlmPayloadOptions = {},
 ): Promise<Response> {
-    const bodyText = fixInvalidJsonEscapes(JSON.stringify(sanitizeBodyValue(payload.body)));
+    // sanitizeBodyValue (Pass 1) strips C0 control chars and lone UTF-16 surrogates
+    // from all string values before JSON.stringify, which is sufficient.
+    // Note: JSON.stringify already produces valid JSON escape sequences for any
+    // well-formed JavaScript value, so no post-stringify fixup is needed.
+    const bodyText = JSON.stringify(sanitizeBodyValue(payload.body));
     if (payload.serverProxy) {
         return fetch("/api/llm-proxy", {
             method: "POST",
